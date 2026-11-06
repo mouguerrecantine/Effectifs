@@ -10,8 +10,12 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { KEYS } from "./metier.js";
 
+// Colonne « Adultes » retirée de l'interface : le champ reste écrit à 0 car les règles Firestore
+// publiées l'exigent (inutile de les republier).
+const COMPAT = { scolaire: { repasAdultes: 0 } };
+
 const cache = new Map(); // année -> { scolaire, mercredis, vacances, periodes }
-const clean = (d) => { const { maj, ...rest } = d; return rest; };
+const clean = (d) => { const { maj, repasAdultes, ...rest } = d; return rest; };
 const byDate = (a, b) => (a.date < b.date ? -1 : 1);
 
 export async function loadYear(year, { force = false } = {}) {
@@ -37,7 +41,7 @@ export async function saveDay(col, date, values, extra = {}) {
   const vide = Object.values(nums).every((n) => n === 0);
   const ref = doc(db, col, date);
   if (vide) await deleteDoc(ref);
-  else await setDoc(ref, { date, ...extra, ...nums, maj: serverTimestamp() });
+  else await setDoc(ref, { date, ...extra, ...COMPAT[col], ...nums, maj: serverTimestamp() });
   const rec = vide ? null : { date, ...extra, ...nums };
   const y = cache.get(Number(date.slice(0, 4)));
   if (y) {
@@ -61,7 +65,7 @@ export async function importAll(json, onProgress = () => {}) {
     for (const d of json[col] || []) {
       const nums = Object.fromEntries(KEYS[col].map((k) => [k, Math.max(0, Math.trunc(Number(d[k]) || 0))]));
       const extra = col === "vacances" ? { periode: d.periode } : {};
-      ops.push([doc(db, col, d.date), { date: d.date, ...extra, ...nums, maj: serverTimestamp() }]);
+      ops.push([doc(db, col, d.date), { date: d.date, ...extra, ...COMPAT[col], ...nums, maj: serverTimestamp() }]);
     }
   }
   for (const p of json.periodes || []) {

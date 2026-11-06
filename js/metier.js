@@ -4,7 +4,6 @@ export const REPAS = [
   { k: "repasPort", l: "Port" },
   { k: "repasEliz", l: "Eliz." },
   { k: "repasBourg", l: "Bourg" },
-  { k: "repasAdultes", l: "Adultes" },
 ];
 export const GOUTERS = [
   { k: "gouterPort", l: "Port" },

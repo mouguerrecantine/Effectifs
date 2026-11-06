@@ -4,7 +4,7 @@ import { REPAS, GOUTERS, MERCREDI, VACANCES, PERIODES, GOUTER_MERCREDI, GOUTER_V
 export const somme = (o, keys) => keys.reduce((a, k) => a + (Number(o?.[k]) || 0), 0);
 const R = REPAS.map((c) => c.k), G = GOUTERS.map((c) => c.k), M = MERCREDI.map((c) => c.k), V = VACANCES.map((c) => c.k);
 
-export const repasScolaire = (d) => somme(d, R);          // Port + Eliz. + Bourg + Adultes
+export const repasScolaire = (d) => somme(d, R);          // Port + Eliz. + Bourg
 export const goutersScolaire = (d) => somme(d, G);        // Port + Eliz. + Bourg + Ste Marie
 export const repasMercredi = (d) => somme(d, M);          // tous les groupes + animateurs + personnel
 export const goutersMercredi = (d) => somme(d, GOUTER_MERCREDI);

@@ -14,7 +14,7 @@ Nom affiché du site : **« Outils cuisine »** (menus, titre d'onglet, connexio
 | Données / connexion | Firebase (Spark gratuit) : Firestore + Authentication e-mail/mot de passe |
 | Utilisateurs | **Un seul compte**, créé à la main dans la console Firebase. Pas d'inscription depuis le site |
 | Bilans | Par **année civile** (2025, 2026, 2027…) — plus d'années scolaires « 2025-2026 » |
-| Colonne « Adultes » (repas écoles) | **Comptée** dans le total des repas |
+| Colonne « Adultes » (repas écoles) | **Retirée** de l'interface (jamais utilisée). Champ `repasAdultes` encore écrit à 0 par `store.js` car exigé par les règles publiées. Les seuls « adultes » restants : pique-nique adultes (vacances) |
 | Formules | Celles de l'Excel sont bonnes → reprises telles quelles, tout est **calculé automatiquement** (plus aucune valeur tapée à la main dans les bilans) |
 | « Jour travaillé » | **Automatique** : un jour avec au moins une valeur > 0 = 1 jour travaillé. Rien à cocher |
 | Écoles / groupes | **Fixes** (pas d'écran de paramétrage) — définis dans `js/metier.js` |
@@ -72,7 +72,7 @@ Volume ≈ 450 docs/an → largement dans le quota gratuit.
 
 ## 5. Règles de calcul (reprises de l'Excel)
 
-- Repas écoles / jour = Port + Eliz. + Bourg + **Adultes**
+- Repas écoles / jour = Port + Eliz. + Bourg
 - Goûters écoles / jour = Port + Eliz. + Bourg + Ste Marie
 - Repas mercredi = Poussins + Jaguars + Cobra + Animateurs + Personnel
 - **Goûters mercredi = Poussins + Jaguars + Cobra + Animateurs** (formule Excel `SUM(C:F)`)

@@ -24,8 +24,8 @@ function tableaux(b, data) {
     rows: MOIS.map((nom, i) => [nom, m[i].scolaire.jours, ...REPAS.map((c) => m[i].scolaire[c.k]), m[i].scolaire.repas,
       m[i].mercredis.jours, m[i].mercredis.repas, m[i].scolaire.repas + m[i].mercredis.repas]),
     foot: ["Total", t.joursScolaire, ...REPAS.map((c) => t.scolaire[c.k]), t.repasScolaire, t.joursMercredis, t.repasMercredis, t.repasPeriodeScolaire],
-    totalCols: [6, 9],
-    tints: [null, ...Array(5).fill(SC), null, MER, MER, null],
+    totalCols: [2 + REPAS.length, 5 + REPAS.length],
+    tints: [null, ...Array(1 + REPAS.length).fill(SC), null, MER, MER, null],
   };
   const gouters = {
     head: ["Mois", ...GOUTERS.map((c) => c.l), "Total écoles", "Mercredis", "Vacances", "Total"],
