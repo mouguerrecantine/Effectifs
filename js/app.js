@@ -18,7 +18,7 @@ const state = { year: pref.get("year", new Date().getFullYear()), current: null,
 let auth, store;
 
 function brand() {
-  return h("div", { class: "brand" }, h("div", { class: "logo", html: icon("logo").innerHTML }), "Effectifs");
+  return h("div", { class: "brand" }, h("div", { class: "logo", html: icon("logo").innerHTML }), "Outils cuisine");
 }
 
 function renderSetup() {
@@ -118,7 +118,7 @@ async function navigate() {
   s.yearLabel.replaceChildren(h("span", {}, state.year));
   s.yearPicker.style.visibility = key === "parametres" ? "hidden" : "visible";
   s.content.replaceChildren(h("div", { class: "splash", style: { position: "static", padding: "80px" } }, h("div", { class: "spinner" })));
-  document.title = `${r.title} · Effectifs`;
+  document.title = `${r.title} · Outils cuisine`;
   try {
     const [{ render }, data] = await Promise.all([r.view(), key === "parametres" ? null : store.loadYear(state.year)]);
     if (id !== state.renderId) return;

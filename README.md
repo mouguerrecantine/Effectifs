@@ -1,4 +1,4 @@
-# Effectifs
+# Outils cuisine
 
 Suivi des effectifs de la cantine (repas et goûters des écoles) et de l'accueil de loisirs
 (mercredis et vacances), avec bilans par année civile.

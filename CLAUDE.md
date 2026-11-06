@@ -3,6 +3,8 @@
 Site web qui remplace le classeur Excel `Global_effectif.xlsm` de suivi des effectifs
 (cantine scolaire + accueil de loisirs/CLSH). Hébergé sur GitHub Pages, données et connexion via Firebase.
 Langue de l'interface et du code métier : **français**.
+Nom affiché du site : **« Outils cuisine »** (menus, titre d'onglet, connexion). Le dépôt, l'adresse
+(`/Effectifs/`), le projet Firebase, le format de sauvegarde `effectifs-v1` et les noms de fichiers exportés gardent « effectifs ».
 
 ## 1. Décisions validées avec l'utilisateur
 

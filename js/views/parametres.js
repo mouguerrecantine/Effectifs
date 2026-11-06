@@ -6,7 +6,7 @@ import { long } from "../dates.js";
 const DATE = /^20\d\d-[01]\d-[0-3]\d$/;
 
 function valider(json) {
-  if (json?.format !== "effectifs-v1") throw new Error("Ce fichier n'est pas une sauvegarde Effectifs.");
+  if (json?.format !== "effectifs-v1") throw new Error("Ce fichier n'est pas une sauvegarde Outils cuisine.");
   for (const col of ["scolaire", "mercredis", "vacances"]) {
     if (!Array.isArray(json[col])) throw new Error(`Section « ${col} » manquante.`);
     for (const d of json[col]) {
