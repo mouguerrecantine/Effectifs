@@ -1,25 +1,10 @@
-// Paramètres : import des données (Excel historique / sauvegarde), sauvegarde, compte.
+// Paramètres : sauvegardes (serveur + copie locale), import des données, compte.
 import { h, icon, toast, confirmer, fmt } from "../ui.js";
-import { KEYS, PERIODES } from "../metier.js";
 import { long } from "../dates.js";
-import { telechargerSauvegarde, derniereSauvegarde, autoActive, activerAuto, prochaineSauvegarde } from "../sauvegarde.js";
-
-const DATE = /^20\d\d-[01]\d-[0-3]\d$/;
-
-function valider(json) {
-  if (json?.format !== "effectifs-v1") throw new Error("Ce fichier n'est pas une sauvegarde Outils cuisine.");
-  for (const col of ["scolaire", "mercredis", "vacances"]) {
-    if (!Array.isArray(json[col])) throw new Error(`Section « ${col} » manquante.`);
-    for (const d of json[col]) {
-      if (!DATE.test(d.date)) throw new Error(`Date invalide dans « ${col} » : ${d.date}`);
-      for (const k of KEYS[col]) if (d[k] != null && !(Number.isInteger(d[k]) && d[k] >= 0 && d[k] <= 5000)) throw new Error(`Valeur invalide (${col} ${d.date} ${k}).`);
-      if (col === "vacances" && !PERIODES.some((p) => p.k === d.periode)) throw new Error(`Période invalide le ${d.date}.`);
-    }
-  }
-  const all = [...json.scolaire, ...json.mercredis, ...json.vacances].map((d) => d.date).sort();
-  return { n: { scolaire: json.scolaire.length, mercredis: json.mercredis.length, vacances: json.vacances.length, periodes: (json.periodes || []).length },
-    de: all[0], a: all.at(-1) };
-}
+import {
+  valider, TYPES, sauvegarderServeur, restaurer, telechargerDepuisServeur, prochaineServeur, nettoyerHistorique,
+  telechargerCopie, derniereLocale, autoLocaleActive, activerAutoLocale,
+} from "../sauvegarde.js";
 
 export function render(page, { store, auth, setSubtitle }) {
   setSubtitle("Import, sauvegarde et compte");
@@ -63,35 +48,113 @@ export function render(page, { store, auth, setSubtitle }) {
   zone.addEventListener("drop", (e) => { e.preventDefault(); zone.classList.remove("over"); if (e.dataTransfer.files[0]) lire(e.dataTransfer.files[0]); });
 
   const fmtDate = (d) => new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" }).format(d);
-  const etat = h("p", { class: "note", style: { margin: "12px 0 0" } });
-  const majEtat = () => {
-    const d = derniereSauvegarde();
-    etat.replaceChildren(
-      d ? `Dernière sauvegarde sur cet ordinateur : ${fmtDate(new Date(d))}.` : "Aucune sauvegarde faite depuis cet ordinateur.",
-      autoActive() ? ` Prochaine sauvegarde automatique : ${Date.now() >= prochaineSauvegarde().getTime() ? "à la prochaine ouverture du site" : fmtDate(prochaineSauvegarde())}.` : "");
+  const fmtHeure = (d) => new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(d);
+  const ico = (n) => h("span", { html: icon(n).innerHTML, style: { display: "inline-flex" } });
+
+  // ---------- Sauvegardes sur le serveur ----------
+  const liste = h("div", { class: "backups" }, h("div", { class: "splash", style: { position: "static", padding: "24px" } }, h("div", { class: "spinner" })));
+  const prochaine = h("p", { class: "note", style: { margin: "0 0 14px" } });
+
+  async function chargerListe() {
+    let items;
+    try { items = await store.listerSauvegardes(); }
+    catch (e) {
+      console.error(e);
+      prochaine.replaceChildren();
+      liste.replaceChildren(h("div", { class: "alert" }, ico("alert"), h("span", {},
+        e?.code === "permission-denied"
+          ? "Les sauvegardes sur le serveur ne sont pas encore activées : il faut mettre à jour les règles de sécurité dans Firebase (Firestore > Règles)."
+          : "Impossible de lire les sauvegardes (connexion internet ?).")));
+      return;
+    }
+    const p = prochaineServeur(items);
+    prochaine.replaceChildren(`Prochaine sauvegarde automatique : ${Date.now() >= p.getTime() ? "à la prochaine ouverture du site" : fmtDate(p)}.`);
+    if (!items.length) { liste.replaceChildren(h("p", { class: "note" }, "Aucune sauvegarde pour l'instant.")); return; }
+    liste.replaceChildren(...items.map((b, i) => {
+      const d = new Date(b.date);
+      const bar = h("div", {});
+      const btnDl = h("button", { class: "btn sm", title: "Télécharger cette sauvegarde (fichier JSON)", onclick: async () => {
+        btnDl.disabled = true;
+        try { await telechargerDepuisServeur(store, b.id); toast("Sauvegarde téléchargée"); }
+        catch (e) { console.error(e); toast("Téléchargement impossible", "error"); }
+        btnDl.disabled = false;
+      } }, ico("download"), "Télécharger");
+      const btnRest = h("button", { class: "btn sm", title: "Remettre les données dans cet état", onclick: async () => {
+        const ok = await confirmer(`Restaurer la sauvegarde du ${fmtDate(d)} ?`,
+          "Toutes les données actuelles seront remplacées par celles de cette sauvegarde. Par sécurité, l'état actuel est d'abord sauvegardé (« Avant restauration »), tu pourras donc revenir en arrière.",
+          { ok: "Restaurer", danger: true });
+        if (!ok) return;
+        btnRest.disabled = btnDl.disabled = true;
+        item.append(h("div", { class: "progress" }, bar));
+        try {
+          const r = await restaurer(store, b.id, (x) => { bar.style.width = `${Math.round(x * 100)}%`; });
+          toast(`Restauration terminée (${fmt(r.ecrits)} éléments${r.supprimes ? `, ${r.supprimes} jour${r.supprimes > 1 ? "s" : ""} retiré${r.supprimes > 1 ? "s" : ""}` : ""})`);
+          chargerListe();
+        } catch (e) {
+          console.error(e);
+          toast("Échec de la restauration : les données n'ont pas toutes été remplacées. Réessayez.", "error");
+          btnRest.disabled = btnDl.disabled = false;
+        }
+      } }, ico("upload"), "Restaurer");
+      const item = h("div", { class: "backup", style: { animationDelay: `${i * 40}ms` } },
+        h("div", { class: "backup-main" },
+          h("div", {}, h("b", {}, fmtDate(d)), h("span", { class: "meta" }, ` à ${fmtHeure(d)}`)),
+          h("div", { class: "meta" }, h("span", { class: `tag type-${b.type}` }, TYPES[b.type] || b.type), ` ${fmt(b.nb)} jours · ${fmt(Math.max(1, Math.round(b.taille / 1024)))} Ko`)),
+        h("div", { class: "backup-actions" }, btnDl, btnRest));
+      return item;
+    }));
+  }
+
+  const btnServeur = h("button", { class: "btn primary", onclick: async () => {
+    btnServeur.disabled = true;
+    try {
+      const s = await sauvegarderServeur(store, "manuelle");
+      toast(`Sauvegarde enregistrée sur le serveur (${s.nb} jours)`);
+      await nettoyerHistorique(store, await store.listerSauvegardes());
+      await chargerListe();
+    } catch (e) {
+      console.error(e);
+      toast(e?.code === "permission-denied" ? "Refusé par Firebase : mettez à jour les règles de sécurité." : "Sauvegarde impossible", "error");
+    }
+    btnServeur.disabled = false;
+  } }, ico("shield"), "Sauvegarder maintenant");
+
+  // ---------- Copie sur cet ordinateur ----------
+  const etatLocal = h("p", { class: "note", style: { margin: "10px 0 0" } });
+  const majLocal = () => {
+    const d = derniereLocale();
+    etatLocal.replaceChildren(d ? `Dernière copie sur cet ordinateur : ${fmtDate(new Date(d))}.` : "Aucune copie faite depuis cet ordinateur.");
   };
-  const btnSave = h("button", { class: "btn", onclick: async () => {
-    btnSave.disabled = true;
-    try { await telechargerSauvegarde(store); toast("Sauvegarde téléchargée"); majEtat(); }
-    catch (e) { console.error(e); toast("Sauvegarde impossible", "error"); }
-    btnSave.disabled = false;
-  } }, h("span", { html: icon("download").innerHTML, style: { display: "inline-flex" } }), "Télécharger maintenant");
-  const caseAuto = h("input", { type: "checkbox", class: "switch", id: "auto-save", checked: autoActive(),
-    onchange: () => { activerAuto(caseAuto.checked); majEtat(); toast(caseAuto.checked ? "Sauvegarde automatique activée" : "Sauvegarde automatique désactivée"); } });
-  majEtat();
+  const btnCopie = h("button", { class: "btn", onclick: async () => {
+    btnCopie.disabled = true;
+    try { await telechargerCopie(store); toast("Copie téléchargée"); majLocal(); }
+    catch (e) { console.error(e); toast("Copie impossible", "error"); }
+    btnCopie.disabled = false;
+  } }, ico("download"), "Télécharger une copie");
+  const caseAuto = h("input", { type: "checkbox", class: "switch", id: "auto-save", checked: autoLocaleActive(),
+    onchange: () => { activerAutoLocale(caseAuto.checked); toast(caseAuto.checked ? "Copie mensuelle activée" : "Copie mensuelle désactivée"); } });
+  majLocal();
+  chargerListe();
 
   const email = auth.currentEmail?.() || "";
   page.append(h("div", { class: "grid settings stagger" },
-    h("div", { class: "card" }, h("div", { class: "card-head" }, h("h2", {}, "Importer des données")),
-      h("p", {}, "Pour charger les données de l'ancien fichier Excel (fichier « donnees-initiales.json ») ou restaurer une sauvegarde."),
-      input, zone, result),
-    h("div", { class: "grid" },
-      h("div", { class: "card" }, h("div", { class: "card-head" }, h("h2", {}, "Sauvegarde")),
-        h("p", {}, "Un fichier avec toutes les données (toutes années), à garder en lieu sûr. Il se restaure avec « Importer des données »."),
-        h("label", { class: "switch-row", for: "auto-save" }, caseAuto,
-          h("span", {}, h("b", {}, "Sauvegarde automatique tous les mois"), h("br"),
-            h("span", { class: "note" }, "Téléchargée toute seule à l'ouverture du site sur l'ordinateur, tous les 30 jours."))),
-        btnSave, etat),
+    h("div", { class: "card" },
+      h("div", { class: "card-head" }, h("h2", {}, "Sauvegardes sur le serveur"), h("span", { class: "hint" }, "1 an d'historique")),
+      h("p", {}, "Une sauvegarde complète est enregistrée automatiquement chaque mois dans la base Firebase. Celles de plus d'un an sont supprimées automatiquement."),
+      prochaine,
+      h("div", { style: { marginBottom: "14px" } }, btnServeur),
+      liste,
+      h("div", { class: "divider" }),
+      h("h3", { class: "sub-title" }, "Copie sur cet ordinateur"),
+      h("p", {}, "En plus, un fichier à garder chez toi (clé USB, cloud) en cas de gros problème avec Firebase."),
+      h("label", { class: "switch-row", for: "auto-save" }, caseAuto,
+        h("span", {}, h("b", {}, "Télécharger aussi une copie chaque mois"), h("br"),
+          h("span", { class: "note" }, "Dans le dossier Téléchargements, à l'ouverture du site sur l'ordinateur."))),
+      btnCopie, etatLocal),
+    h("div", { class: "grid", style: { alignContent: "start" } },
+      h("div", { class: "card" }, h("div", { class: "card-head" }, h("h2", {}, "Importer des données")),
+        h("p", {}, "Pour charger un fichier de sauvegarde (ou les données de l'ancien fichier Excel). Les jours du fichier remplacent ceux des mêmes dates."),
+        input, zone, result),
       h("div", { class: "card" }, h("div", { class: "card-head" }, h("h2", {}, "Compte")),
         h("p", {}, "Connecté en tant que ", h("b", {}, email), "."),
         h("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap" } },
@@ -99,9 +162,9 @@ export function render(page, { store, auth, setSubtitle }) {
             try { await auth.resetPassword(email); toast("E-mail de changement de mot de passe envoyé"); }
             catch (e) { toast(auth.messageErreur(e), "error"); }
           } }, "Changer le mot de passe"),
-          h("button", { class: "btn danger", onclick: () => auth.logout() }, h("span", { html: icon("logout").innerHTML, style: { display: "inline-flex" } }), "Se déconnecter"))),
+          h("button", { class: "btn danger", onclick: () => auth.logout() }, ico("logout"), "Se déconnecter"))),
       h("div", { class: "card" }, h("div", { class: "card-head" }, h("h2", {}, "Sécurité")),
         h("p", { style: { margin: 0 } }, h("span", { html: icon("shield").innerHTML, style: { display: "inline-flex", verticalAlign: "middle", marginRight: "6px", color: "var(--success)" } }),
-          "Les données sont stockées dans Firebase et ne sont accessibles qu'à ce compte (règles Firestore). Le code du site est public, les données ne le sont pas.")))));
+          "Les données et les sauvegardes sont stockées dans Firebase et ne sont accessibles qu'à ce compte (règles Firestore). Le code du site est public, les données ne le sont pas.")))));
   return null;
 }

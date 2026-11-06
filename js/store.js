@@ -6,7 +6,7 @@
 // Un jour sans aucune valeur est supprimé → "jour travaillé" = jour qui a au moins une valeur.
 import { db } from "./firebase.js";
 import {
-  collection, doc, getDocs, query, where, setDoc, deleteDoc, writeBatch, serverTimestamp,
+  collection, doc, getDoc, getDocs, query, where, setDoc, deleteDoc, writeBatch, serverTimestamp, Bytes,
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { KEYS } from "./metier.js";
 
@@ -90,3 +90,58 @@ export async function exportAll() {
 }
 
 export const clearCache = () => cache.clear();
+
+// ---------------------------------------------------------------------------
+// Sauvegardes sur le serveur (dans Firestore). Une sauvegarde = 2 documents :
+//   sauvegardes/{id}         fiche légère : date ISO, type, nb de jours, taille (octets)
+//   sauvegardesContenu/{id}  contenu : export complet, JSON compressé gzip (Bytes)
+// id = "AAAA-MM-JJ_HH-MM-SS". Les sauvegardes ne sont jamais modifiées (règles : création/suppression seulement).
+
+export async function listerSauvegardes() {
+  const snap = await getDocs(collection(db, "sauvegardes"));
+  return snap.docs.map((d) => ({ id: d.id, ...clean(d.data()) })).sort((a, b) => (a.id < b.id ? 1 : -1));
+}
+
+export async function creerSauvegarde(id, type, nb, octets) {
+  const batch = writeBatch(db);
+  batch.set(doc(db, "sauvegardesContenu", id), { contenu: Bytes.fromUint8Array(octets), maj: serverTimestamp() });
+  batch.set(doc(db, "sauvegardes", id), { date: new Date().toISOString(), type, nb, taille: octets.length, maj: serverTimestamp() });
+  await batch.commit();
+}
+
+export async function lireSauvegarde(id) {
+  const snap = await getDoc(doc(db, "sauvegardesContenu", id));
+  if (!snap.exists()) throw new Error("Sauvegarde introuvable");
+  return snap.data().contenu.toUint8Array();
+}
+
+export async function supprimerSauvegarde(id) {
+  const batch = writeBatch(db);
+  batch.delete(doc(db, "sauvegardesContenu", id));
+  batch.delete(doc(db, "sauvegardes", id));
+  await batch.commit();
+}
+
+/** Remet la base exactement dans l'état de la sauvegarde : écrit ses jours et supprime ceux qui n'y sont pas. */
+export async function restaurerTout(json, onProgress = () => {}) {
+  const actuel = await exportAll();
+  const garder = {
+    scolaire: new Set(json.scolaire.map((d) => d.date)),
+    mercredis: new Set(json.mercredis.map((d) => d.date)),
+    vacances: new Set(json.vacances.map((d) => d.date)),
+    periodes: new Set((json.periodes || []).map((p) => `${p.annee}-${p.periode}`)),
+  };
+  const aSupprimer = [
+    ...["scolaire", "mercredis", "vacances"].flatMap((col) => actuel[col].filter((d) => !garder[col].has(d.date)).map((d) => doc(db, col, d.date))),
+    ...actuel.periodes.filter((p) => !garder.periodes.has(`${p.annee}-${p.periode}`)).map((p) => doc(db, "periodes", `${p.annee}-${p.periode}`)),
+  ];
+  const n = await importAll(json, (p) => onProgress(p * 0.8));
+  for (let i = 0; i < aSupprimer.length; i += 400) {
+    const batch = writeBatch(db);
+    for (const ref of aSupprimer.slice(i, i + 400)) batch.delete(ref);
+    await batch.commit();
+  }
+  onProgress(1);
+  cache.clear();
+  return { ecrits: n, supprimes: aSupprimer.length };
+}

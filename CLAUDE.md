@@ -50,7 +50,7 @@ js/dates.js              dates locales AAAA-MM-JJ, jours fériés français
 js/grille.js             grille de saisie type tableur (autosave, totaux live, clavier)
 js/ui.js                 h() (création DOM sûre), icônes SVG, toasts, countUp, confirm
 js/maj.js                enregistre sw.js + vérifie version.json (5 min, focus) → recharge si nouvelle version
-js/sauvegarde.js         sauvegarde JSON complète : bouton + automatique tous les 30 jours (ordinateur uniquement)
+js/sauvegarde.js         sauvegardes serveur (auto 30 j, historique 1 an, restauration) + copie locale JSON (option)
 js/views/*.js            une page = un module exportant render(page, ctx)
 firestore.rules          règles de sécurité à coller dans la console (UID à remplacer)
 outils/extraire_excel.py conversion du .xlsm → donnees-initiales.json (importable)
@@ -69,6 +69,7 @@ Un document **par jour**, identifiant = date `AAAA-MM-JJ` (pas de doublon possib
 | `mercredis/{date}` | `poussins, jaguars, cobra, animateurs, personnel` |
 | `vacances/{date}` | `periode` (`hiver/printemps/juillet/aout/toussaint`) + `poussins, jaguars, cobra, passerelle, piqueEnfants, piqueAdultes, animateurs, personnel` |
 | `periodes/{annee}-{periode}` | `annee, periode, debut, fin` (dates d'ouverture d'une période de vacances) |
+| `sauvegardes/{id}` + `sauvegardesContenu/{id}` | fiche (`date, type, nb, taille`) + `contenu` (Bytes gzip) — voir § 8 |
 
 Tous les documents ont `date` (string) et `maj` (serverTimestamp). Chargement par année :
 `where("date", ">=", "AAAA-01-01")` + `<= "AAAA-12-31"` (index simple, pas d'index composite).
@@ -127,11 +128,15 @@ icône d'état par ligne (spinner → ✓, ou ⚠ + toast) ; enregistrement forc
   (fonction `h()` qui insère du texte ; `html:` réservé aux icônes constantes).
 - **Aucune donnée dans le dépôt public** : `.gitignore` exclut `*.xlsm`, `*.xlsx`, `donnees*.json`, `sauvegarde*.json`.
 - La config Firebase (apiKey…) est publique par nature ; option : restreindre la clé aux référents HTTP dans Google Cloud.
-- Sauvegarde JSON (`js/sauvegarde.js`) : bouton dans Paramètres + **sauvegarde automatique tous les 30 jours**,
-  téléchargée 4 s après l'ouverture du site si due (dossier Téléchargements), interrupteur on/off dans Paramètres.
-  Date de dernière sauvegarde et réglage mémorisés **par appareil** (localStorage `eff.sauvegarde.*`) ;
-  uniquement sur ordinateur (`pointer: fine`). Restauration = Paramètres > Importer.
-  Alternative plus robuste (non retenue, payante) : sauvegardes planifiées Firestore (forfait Blaze).
+- **Sauvegardes sur le serveur** (`js/sauvegarde.js` + `store.js`) : collections `sauvegardes/{id}` (fiche : date, type
+  `auto|manuelle|avant-restauration`, nb, taille) et `sauvegardesContenu/{id}` (export complet JSON **gzip** en Bytes,
+  ≈ 7 Ko pour 430 jours ; limite règles < 1 Mo). id = `AAAA-MM-JJ_HH-MM-SS`. **Création/suppression seulement**
+  (jamais de modification). Automatique 4 s après l'ouverture si la dernière auto/manuelle a ≥ 30 jours (date en base →
+  vaut pour tous les appareils) ; suppression de celles de plus de 365 jours. Paramètres : liste, « Sauvegarder
+  maintenant », « Télécharger », « Restaurer » (= `restaurerTout` : remet la base exactement dans l'état de la
+  sauvegarde, jours en trop supprimés ; une sauvegarde « avant-restauration » est faite juste avant).
+- Copie locale (fichier JSON) : bouton + option mensuelle **désactivée par défaut** (`eff.sauvegarde.auto.v2`, ordinateur).
+- Pas de code serveur (forfait Spark) : la sauvegarde mensuelle se déclenche à l'ouverture du site.
 
 ## 9. Reprise des données Excel
 

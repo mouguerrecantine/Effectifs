@@ -64,6 +64,27 @@ service cloud.firestore {
         && request.resource.data.maj == request.time;
     }
 
+    // Sauvegardes (historique d'un an) : création et suppression seulement, jamais de modification.
+    match /sauvegardes/{id} {
+      allow read, delete: if isOwner();
+      allow create: if isOwner()
+        && id.matches('^20[0-9]{2}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}$')
+        && request.resource.data.keys().hasOnly(['date', 'type', 'nb', 'taille', 'maj'])
+        && request.resource.data.date is string
+        && request.resource.data.type in ['auto', 'manuelle', 'avant-restauration']
+        && request.resource.data.nb is int && request.resource.data.taille is int
+        && request.resource.data.maj == request.time;
+    }
+    match /sauvegardesContenu/{id} {
+      allow read, delete: if isOwner();
+      allow create: if isOwner()
+        && id.matches('^20[0-9]{2}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}$')
+        && request.resource.data.keys().hasOnly(['contenu', 'maj'])
+        && request.resource.data.contenu is bytes
+        && request.resource.data.contenu.size() < 1000000
+        && request.resource.data.maj == request.time;
+    }
+
     // Tout le reste : interdit.
     match /{document=**} {
       allow read, write: if false;
