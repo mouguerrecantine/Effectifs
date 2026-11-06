@@ -1,6 +1,7 @@
 // Point d'entrée : connexion, mise en page, navigation (#/page), choix de l'année.
 import { configOk } from "./firebase-config.js";
 import { h, icon, pref, toast } from "./ui.js";
+import { demarrerMisesAJour } from "./maj.js";
 
 const root = document.getElementById("app");
 const ANNEE_MIN = 2025;
@@ -148,4 +149,12 @@ window.addEventListener("beforeunload", (e) => {
   if (state.current?.pending?.()) { state.current.flush?.(); e.preventDefault(); e.returnValue = ""; }
 });
 
+demarrerMisesAJour({
+  avantRecharge: () => state.current?.flush?.(),
+  // Saisie en cours : une case de grille, ou un champ déjà rempli (ex. mot de passe tapé) qui a le curseur.
+  occupe: () => {
+    const el = document.activeElement;
+    return !!el?.matches?.("input, textarea") && (el.classList.contains("cell") || el.value !== "");
+  },
+});
 boot();

@@ -35,6 +35,8 @@ Nom affiché du site : **« Outils cuisine »** (menus, titre d'onglet, connexio
 ```
 index.html               page unique (CSP stricte), charge js/app.js
 manifest.webmanifest     nom « Outils cuisine » + icônes pour installer/raccourci (Chrome, Edge)
+sw.js                    service worker « réseau d'abord » (toujours la dernière version, copie hors ligne)
+version.json             numéro de version — ⚠️ À CHANGER À CHAQUE MISE EN LIGNE (déclenche la mise à jour auto)
 assets/icons/            icônes PNG 192/512 (bords arrondis, fond transparent) + apple-touch, générées depuis assets/favicon.svg
 css/style.css            design system (variables clair/sombre, animations, impression)
 js/app.js                démarrage, auth, mise en page, routeur (#/page), sélecteur d'année
@@ -47,6 +49,7 @@ js/calcul.js             calculs des bilans (fonctions pures, testables sans Fir
 js/dates.js              dates locales AAAA-MM-JJ, jours fériés français
 js/grille.js             grille de saisie type tableur (autosave, totaux live, clavier)
 js/ui.js                 h() (création DOM sûre), icônes SVG, toasts, countUp, confirm
+js/maj.js                enregistre sw.js + vérifie version.json (5 min, focus) → recharge si nouvelle version
 js/views/*.js            une page = un module exportant render(page, ctx)
 firestore.rules          règles de sécurité à coller dans la console (UID à remplacer)
 outils/extraire_excel.py conversion du .xlsm → donnees-initiales.json (importable)
@@ -139,6 +142,18 @@ Corrections automatiques appliquées :
   ⇒ les totaux Toussaint 2025 et Juillet 2026 de l'Excel étaient gonflés par ces doublons.
 - Goûters mercredis janv.–juil. 2026 tapés à la main dans l'Excel → désormais calculés.
 - Colonne « jour travaillé » ignorée (calcul automatique).
+
+## 9 bis. Mises à jour automatiques (site installé ou non)
+
+- **À chaque commit qui change le site : modifier `version.json`** (format `AAAA-MM-JJ.n`, ex. `2026-11-06.2`).
+- `js/maj.js` lit `version.json` (sans cache) au démarrage, toutes les 5 min et au retour sur la fenêtre ;
+  si la version a changé : enregistre la saisie en attente (`flush`), toast « Nouvelle version… », recharge.
+  Jamais pendant une saisie (curseur dans une case de grille ou un champ rempli) : réessai plus tard.
+- `sw.js` : « réseau d'abord » avec `cache: "no-cache"` sur les fichiers du site (évite le cache de 10 min de
+  GitHub Pages et les mélanges ancien/nouveau module) ; copie locale seulement si hors ligne ; autres domaines
+  (Firebase, polices) non interceptés ; `version.json` jamais mis en cache.
+- Nom/icône (manifeste) : Chrome/Edge les mettent à jour seuls sur les applis installées (vérif. au lancement).
+- Tests Playwright : `serviceWorkers: 'block'` sinon `page.route` ne voit pas les requêtes servies par le SW.
 
 ## 10. Tests
 
