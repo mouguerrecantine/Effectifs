@@ -1,0 +1,7 @@
+# Ne jamais publier de données (le dépôt est public) :
+*.xlsm
+*.xlsx
+donnees*.json
+sauvegarde*.json
+__pycache__/
+.DS_Store

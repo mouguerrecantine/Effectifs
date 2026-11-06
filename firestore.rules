@@ -1,0 +1,72 @@
+rules_version = '2';
+
+// Règles de sécurité Firestore — à copier dans la console Firebase (Firestore > Règles).
+// ⚠️ Remplacer VOTRE_UID par l'UID du compte (Authentication > Users > colonne "User UID").
+// Seul ce compte peut lire/écrire ; tout le reste est refusé. Chaque écriture est vérifiée.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner() {
+      return request.auth != null && request.auth.uid == 'VOTRE_UID';
+    }
+    function n(v) {               // nombre entier positif raisonnable
+      return v is int && v >= 0 && v <= 5000;
+    }
+    function okDay(id) {          // identifiant = date AAAA-MM-JJ, cohérent avec le champ date
+      let d = request.resource.data;
+      return id.matches('^20[0-9]{2}-[01][0-9]-[0-3][0-9]$') && d.date == id && d.maj == request.time;
+    }
+
+    match /scolaire/{id} {
+      allow read, delete: if isOwner();
+      allow create, update: if isOwner() && okDay(id)
+        && request.resource.data.keys().hasOnly(['date', 'maj',
+             'repasPort', 'repasEliz', 'repasBourg', 'repasAdultes',
+             'gouterPort', 'gouterEliz', 'gouterBourg', 'gouterSteMarie'])
+        && n(request.resource.data.repasPort) && n(request.resource.data.repasEliz)
+        && n(request.resource.data.repasBourg) && n(request.resource.data.repasAdultes)
+        && n(request.resource.data.gouterPort) && n(request.resource.data.gouterEliz)
+        && n(request.resource.data.gouterBourg) && n(request.resource.data.gouterSteMarie);
+    }
+
+    match /mercredis/{id} {
+      allow read, delete: if isOwner();
+      allow create, update: if isOwner() && okDay(id)
+        && request.resource.data.keys().hasOnly(['date', 'maj',
+             'poussins', 'jaguars', 'cobra', 'animateurs', 'personnel'])
+        && n(request.resource.data.poussins) && n(request.resource.data.jaguars)
+        && n(request.resource.data.cobra) && n(request.resource.data.animateurs)
+        && n(request.resource.data.personnel);
+    }
+
+    match /vacances/{id} {
+      allow read, delete: if isOwner();
+      allow create, update: if isOwner() && okDay(id)
+        && request.resource.data.keys().hasOnly(['date', 'maj', 'periode',
+             'poussins', 'jaguars', 'cobra', 'passerelle',
+             'piqueEnfants', 'piqueAdultes', 'animateurs', 'personnel'])
+        && request.resource.data.periode in ['hiver', 'printemps', 'juillet', 'aout', 'toussaint']
+        && n(request.resource.data.poussins) && n(request.resource.data.jaguars)
+        && n(request.resource.data.cobra) && n(request.resource.data.passerelle)
+        && n(request.resource.data.piqueEnfants) && n(request.resource.data.piqueAdultes)
+        && n(request.resource.data.animateurs) && n(request.resource.data.personnel);
+    }
+
+    match /periodes/{id} {
+      allow read, delete: if isOwner();
+      allow create, update: if isOwner()
+        && request.resource.data.keys().hasOnly(['annee', 'periode', 'debut', 'fin', 'maj'])
+        && request.resource.data.annee is int
+        && request.resource.data.periode in ['hiver', 'printemps', 'juillet', 'aout', 'toussaint']
+        && id == string(request.resource.data.annee) + '-' + request.resource.data.periode
+        && request.resource.data.debut is string && request.resource.data.fin is string
+        && request.resource.data.debut <= request.resource.data.fin
+        && request.resource.data.maj == request.time;
+    }
+
+    // Tout le reste : interdit.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
