@@ -21,7 +21,7 @@ Nom affiché du site : **« Outils cuisine »** (menus, titre d'onglet, connexio
 | Erreurs de l'Excel | Corrigées automatiquement par `outils/extraire_excel.py` |
 | Bilan | Tableau de bord + comparaison N-1 + export Excel + impression PDF |
 | Usage | **Ordinateur** (responsive correct mais non prioritaire) |
-| Design | Sobre, moderne, jolies animations |
+| Design | Sobre, moderne, jolies animations, **thème sombre permanent** |
 
 ## 2. Stack technique
 
@@ -107,7 +107,8 @@ icône d'état par ligne (spinner → ✓, ou ⚠ + toast) ; enregistrement forc
 
 ## 7. Design
 
-- Variables CSS dans `:root`, mode sombre automatique (`prefers-color-scheme`).
+- Variables CSS dans `:root`. **Thème sombre permanent pour tout le monde** (choix de l'utilisateur) : plus de thème clair
+  ni de `prefers-color-scheme` ; seule l'impression repasse en clair (`@media print`).
 - Couleurs par activité : écoles `--c-scolaire` (indigo), mercredis `--c-mercredis` (bleu ciel),
   vacances `--c-vacances` (ambre), goûters `--c-gouters` (vert).
 - Cartes arrondies 14 px, ombres douces, Inter, chiffres tabulaires.
