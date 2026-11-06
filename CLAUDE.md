@@ -35,7 +35,7 @@ Nom affiché du site : **« Outils cuisine »** (menus, titre d'onglet, connexio
 ```
 index.html               page unique (CSP stricte), charge js/app.js
 manifest.webmanifest     nom « Outils cuisine » + icônes pour installer/raccourci (Chrome, Edge)
-assets/icons/            icônes PNG 192/512/maskable/apple-touch générées depuis assets/favicon.svg
+assets/icons/            icônes PNG 192/512 (bords arrondis, fond transparent) + apple-touch, générées depuis assets/favicon.svg
 css/style.css            design system (variables clair/sombre, animations, impression)
 js/app.js                démarrage, auth, mise en page, routeur (#/page), sélecteur d'année
 js/firebase-config.js    ⚠️ config Firebase à remplir (valeurs publiques, non secrètes)
