@@ -50,6 +50,7 @@ js/dates.js              dates locales AAAA-MM-JJ, jours fériés français
 js/grille.js             grille de saisie type tableur (autosave, totaux live, clavier)
 js/ui.js                 h() (création DOM sûre), icônes SVG, toasts, countUp, confirm
 js/maj.js                enregistre sw.js + vérifie version.json (5 min, focus) → recharge si nouvelle version
+js/sauvegarde.js         sauvegarde JSON complète : bouton + automatique tous les 30 jours (ordinateur uniquement)
 js/views/*.js            une page = un module exportant render(page, ctx)
 firestore.rules          règles de sécurité à coller dans la console (UID à remplacer)
 outils/extraire_excel.py conversion du .xlsm → donnees-initiales.json (importable)
@@ -126,7 +127,11 @@ icône d'état par ligne (spinner → ✓, ou ⚠ + toast) ; enregistrement forc
   (fonction `h()` qui insère du texte ; `html:` réservé aux icônes constantes).
 - **Aucune donnée dans le dépôt public** : `.gitignore` exclut `*.xlsm`, `*.xlsx`, `donnees*.json`, `sauvegarde*.json`.
 - La config Firebase (apiKey…) est publique par nature ; option : restreindre la clé aux référents HTTP dans Google Cloud.
-- Sauvegarde JSON téléchargeable depuis Paramètres (conseillé mensuellement).
+- Sauvegarde JSON (`js/sauvegarde.js`) : bouton dans Paramètres + **sauvegarde automatique tous les 30 jours**,
+  téléchargée 4 s après l'ouverture du site si due (dossier Téléchargements), interrupteur on/off dans Paramètres.
+  Date de dernière sauvegarde et réglage mémorisés **par appareil** (localStorage `eff.sauvegarde.*`) ;
+  uniquement sur ordinateur (`pointer: fine`). Restauration = Paramètres > Importer.
+  Alternative plus robuste (non retenue, payante) : sauvegardes planifiées Firestore (forfait Blaze).
 
 ## 9. Reprise des données Excel
 

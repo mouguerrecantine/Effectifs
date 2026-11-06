@@ -2,6 +2,7 @@
 import { h, icon, toast, confirmer, fmt } from "../ui.js";
 import { KEYS, PERIODES } from "../metier.js";
 import { long } from "../dates.js";
+import { telechargerSauvegarde, derniereSauvegarde, autoActive, activerAuto, prochaineSauvegarde } from "../sauvegarde.js";
 
 const DATE = /^20\d\d-[01]\d-[0-3]\d$/;
 
@@ -61,18 +62,23 @@ export function render(page, { store, auth, setSubtitle }) {
   zone.addEventListener("dragleave", () => zone.classList.remove("over"));
   zone.addEventListener("drop", (e) => { e.preventDefault(); zone.classList.remove("over"); if (e.dataTransfer.files[0]) lire(e.dataTransfer.files[0]); });
 
+  const fmtDate = (d) => new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" }).format(d);
+  const etat = h("p", { class: "note", style: { margin: "12px 0 0" } });
+  const majEtat = () => {
+    const d = derniereSauvegarde();
+    etat.replaceChildren(
+      d ? `Dernière sauvegarde sur cet ordinateur : ${fmtDate(new Date(d))}.` : "Aucune sauvegarde faite depuis cet ordinateur.",
+      autoActive() ? ` Prochaine sauvegarde automatique : ${Date.now() >= prochaineSauvegarde().getTime() ? "à la prochaine ouverture du site" : fmtDate(prochaineSauvegarde())}.` : "");
+  };
   const btnSave = h("button", { class: "btn", onclick: async () => {
     btnSave.disabled = true;
-    try {
-      const json = await store.exportAll();
-      const url = URL.createObjectURL(new Blob([JSON.stringify(json, null, 1)], { type: "application/json" }));
-      const a = h("a", { href: url, download: `sauvegarde-effectifs-${new Date().toISOString().slice(0, 10)}.json` });
-      document.body.append(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      toast("Sauvegarde téléchargée");
-    } catch (e) { console.error(e); toast("Sauvegarde impossible", "error"); }
+    try { await telechargerSauvegarde(store); toast("Sauvegarde téléchargée"); majEtat(); }
+    catch (e) { console.error(e); toast("Sauvegarde impossible", "error"); }
     btnSave.disabled = false;
-  } }, h("span", { html: icon("download").innerHTML, style: { display: "inline-flex" } }), "Télécharger une sauvegarde");
+  } }, h("span", { html: icon("download").innerHTML, style: { display: "inline-flex" } }), "Télécharger maintenant");
+  const caseAuto = h("input", { type: "checkbox", class: "switch", id: "auto-save", checked: autoActive(),
+    onchange: () => { activerAuto(caseAuto.checked); majEtat(); toast(caseAuto.checked ? "Sauvegarde automatique activée" : "Sauvegarde automatique désactivée"); } });
+  majEtat();
 
   const email = auth.currentEmail?.() || "";
   page.append(h("div", { class: "grid settings stagger" },
@@ -81,7 +87,11 @@ export function render(page, { store, auth, setSubtitle }) {
       input, zone, result),
     h("div", { class: "grid" },
       h("div", { class: "card" }, h("div", { class: "card-head" }, h("h2", {}, "Sauvegarde")),
-        h("p", {}, "Télécharge toutes les données (toutes années) dans un fichier. Conseillé une fois par mois."), btnSave),
+        h("p", {}, "Un fichier avec toutes les données (toutes années), à garder en lieu sûr. Il se restaure avec « Importer des données »."),
+        h("label", { class: "switch-row", for: "auto-save" }, caseAuto,
+          h("span", {}, h("b", {}, "Sauvegarde automatique tous les mois"), h("br"),
+            h("span", { class: "note" }, "Téléchargée toute seule à l'ouverture du site sur l'ordinateur, tous les 30 jours."))),
+        btnSave, etat),
       h("div", { class: "card" }, h("div", { class: "card-head" }, h("h2", {}, "Compte")),
         h("p", {}, "Connecté en tant que ", h("b", {}, email), "."),
         h("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap" } },

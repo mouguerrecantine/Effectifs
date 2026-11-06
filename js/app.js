@@ -2,6 +2,7 @@
 import { configOk } from "./firebase-config.js";
 import { h, icon, pref, toast } from "./ui.js";
 import { demarrerMisesAJour } from "./maj.js";
+import { sauvegardeAutoSiBesoin } from "./sauvegarde.js";
 
 const root = document.getElementById("app");
 const ANNEE_MIN = 2025;
@@ -86,6 +87,7 @@ function renderShell(user) {
       content)));
   state.shell = { title, subtitle, yearLabel, yearPicker, content, sidebar };
   navigate();
+  setTimeout(() => sauvegardeAutoSiBesoin(store), 4000); // sauvegarde mensuelle automatique (si due)
 }
 
 /** Termine proprement la page courante (enregistre la saisie en attente). */
