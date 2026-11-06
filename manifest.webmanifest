@@ -1,0 +1,18 @@
+{
+  "id": "./",
+  "name": "Outils cuisine",
+  "short_name": "Outils cuisine",
+  "description": "Effectifs de la cantine et de l'accueil de loisirs : saisie et bilans annuels.",
+  "lang": "fr",
+  "start_url": "./#/tableau-de-bord",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6fb",
+  "theme_color": "#4f46e5",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
