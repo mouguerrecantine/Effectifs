@@ -65,7 +65,7 @@ export function render(page, { year, data, store, setSubtitle }) {
     const kGout = kpi({ label: "Goûters", value: 0, ico: "gouter", color: "--c-gouters" });
 
     grid = createGrid({
-      groups: { Enfants: "var(--c-vacances)", "Pique-nique": "var(--c-gouters)", Encadrement: "var(--faint)", "": "var(--border)" },
+      groups: { Enfants: "var(--c-vacances)", "Pique-nique": "var(--c-piquenique)", Encadrement: "var(--c-encadrement)" },
       cols: [
         ...VACANCES.slice(0, 4).map((c) => ({ ...c, group: "Enfants" })),
         { ...VACANCES[4], l: "Enfants", group: "Pique-nique" }, { ...VACANCES[5], l: "Adultes", group: "Pique-nique" },

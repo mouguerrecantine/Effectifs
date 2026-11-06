@@ -18,6 +18,12 @@ export function createGrid({ cols, rows, groups = {}, onSave, onChange = () => {
   const filled = (vals) => vals && Object.values(vals).some((n) => n > 0);
 
 
+  // Teinte pastel du groupe (colonnes saisies et colonnes calculées "douces") ; totaux = rouge.
+  const tint = (c) => (c.total && !c.soft ? null : groups[c.group] || null);
+  const cls = (c, j) => [c.total && !c.soft ? "total" : "", c.soft ? "calc" : "",
+    j && cols[j - 1].group !== c.group ? "sep" : "", tint(c) ? "tinted" : ""].join(" ");
+  const sty = (c) => (tint(c) ? { "--tint": tint(c) } : {});
+
   // En-têtes (groupes + libellés)
   const groupRow = h("tr", { class: "groups" }, h("th", {}));
   const labelRow = h("tr", {}, h("th", {}, "Date"));
@@ -29,12 +35,12 @@ export function createGrid({ cols, rows, groups = {}, onSave, onChange = () => {
     groupRow.append(h("th", { colspan: span, style: { "--group-color": groups[g] || "var(--border)" } }, g ? h("span", {}, g) : ""));
     i += span;
   }
-  cols.forEach((c, j) => labelRow.append(h("th", { class: [c.total ? "total" : "", j && cols[j - 1].group !== c.group ? "sep" : ""].join(" ") }, c.l)));
+  cols.forEach((c, j) => labelRow.append(h("th", { class: cls(c, j), style: sty(c) }, c.l)));
   groupRow.append(h("th", {}));
   labelRow.append(h("th", { class: "status" }, h("span", { class: "sr-only" }, "État")));
 
   const tbody = h("tbody");
-  const footCells = cols.map((c, j) => h("td", { class: [c.total ? "total" : "", j && cols[j - 1].group !== c.group ? "sep" : ""].join(" ") }));
+  const footCells = cols.map((c, j) => h("td", { class: cls(c, j), style: sty(c) }));
   const footJours = h("td", {});
   const tfoot = h("tfoot", {}, h("tr", {}, footJours, ...footCells, h("td", {})));
 
@@ -44,7 +50,6 @@ export function createGrid({ cols, rows, groups = {}, onSave, onChange = () => {
       h("td", { class: "date" }, h("span", { class: "wd" }, weekday(line.date)), dayMonth(line.date),
         line.tag ? h("span", { class: "tag" }, line.tag) : null));
     cols.forEach((c, j) => {
-      const sep = j && cols[j - 1].group !== c.group ? "sep" : "";
       if (c.k) {
         const v = line.values?.[c.k];
         const input = h("input", {
@@ -57,9 +62,9 @@ export function createGrid({ cols, rows, groups = {}, onSave, onChange = () => {
         input.addEventListener("focus", () => { tr.classList.add("focus"); input.select(); });
         input.addEventListener("blur", () => tr.classList.remove("focus"));
         line.inputs.push(input);
-        tr.append(h("td", { class: sep }, input));
+        tr.append(h("td", { class: cls(c, j), style: sty(c) }, input));
       } else {
-        const td = h("td", { class: `total ${sep}` });
+        const td = h("td", { class: cls(c, j), style: sty(c) });
         line.cells.push({ c, td });
         tr.append(td);
       }

@@ -12,6 +12,9 @@ const ONGLETS = [
   { k: "vacances", l: "Vacances", color: "--c-vacances" },
 ];
 
+const SC = "var(--c-scolaire)", MER = "var(--c-mercredis)", VAC = "var(--c-vacances)", GO = "var(--c-gouters)";
+const PIQ = "var(--c-piquenique)", ENC = "var(--c-encadrement)";
+
 /** Construit les tableaux (utilisés pour l'écran ET l'export Excel). */
 function tableaux(b, data) {
   const t = b.totaux;
@@ -22,6 +25,7 @@ function tableaux(b, data) {
       m[i].mercredis.jours, m[i].mercredis.repas, m[i].scolaire.repas + m[i].mercredis.repas]),
     foot: ["Total", t.joursScolaire, ...REPAS.map((c) => t.scolaire[c.k]), t.repasScolaire, t.joursMercredis, t.repasMercredis, t.repasPeriodeScolaire],
     totalCols: [6, 9],
+    tints: [null, ...Array(5).fill(SC), null, MER, MER, null],
   };
   const gouters = {
     head: ["Mois", ...GOUTERS.map((c) => c.l), "Total écoles", "Mercredis", "Vacances", "Total"],
@@ -29,12 +33,14 @@ function tableaux(b, data) {
       m[i].vacances.gouters, m[i].scolaire.gouters + m[i].mercredis.gouters + m[i].vacances.gouters]),
     foot: ["Total", ...GOUTERS.map((c) => t.scolaire[c.k]), t.goutersScolaire, t.goutersMercredis, t.goutersVacances, t.goutersTotal],
     totalCols: [5, 8],
+    tints: [null, GO, GO, GO, GO, null, MER, VAC, null],
   };
   const mercredis = {
     head: ["Mois", "Jours", ...MERCREDI.map((c) => c.l), "Total repas", "Goûters"],
     rows: MOIS.map((nom, i) => [nom, m[i].mercredis.jours, ...MERCREDI.map((c) => m[i].mercredis[c.k]), m[i].mercredis.repas, m[i].mercredis.gouters]),
     foot: ["Total", t.joursMercredis, ...MERCREDI.map((c) => t.mercredis[c.k]), t.repasMercredis, t.goutersMercredis],
     totalCols: [7],
+    tints: [null, MER, MER, MER, MER, ENC, ENC, null, GO],
   };
   const vacances = {
     head: ["Période", "Dates", "Jours", ...VACANCES.map((c) => c.l), "Total repas", "Goûters"],
@@ -45,15 +51,20 @@ function tableaux(b, data) {
     }),
     foot: ["Total", "", t.joursVacances, ...VACANCES.map((c) => t.vacances[c.k]), t.repasVacances, t.goutersVacances],
     totalCols: [11],
+    tints: [null, null, VAC, VAC, VAC, VAC, VAC, PIQ, PIQ, ENC, ENC, null, GO],
   };
   return { repas, gouters, mercredis, vacances };
 }
 
-function table({ head, rows, foot, totalCols }) {
+function table({ head, rows, foot, totalCols, tints = [] }) {
   const isNum = (v) => typeof v === "number";
-  const cell = (tag, v, j) => h(tag, { class: totalCols.includes(j) ? "total" : "" }, isNum(v) ? fmt(v) : v);
+  const attrs = (j) => ({
+    class: [totalCols.includes(j) ? "total" : "", tints[j] ? "tinted" : "", j && tints[j] !== tints[j - 1] ? "sep" : ""].join(" "),
+    style: tints[j] ? { "--tint": tints[j] } : {},
+  });
+  const cell = (tag, v, j) => h(tag, attrs(j), isNum(v) ? fmt(v) : v);
   return h("div", { class: "table-wrap" }, h("table", { class: "grid-table bilan-table" },
-    h("thead", {}, h("tr", {}, head.map((x, j) => h("th", { class: totalCols.includes(j) ? "total" : "" }, x)))),
+    h("thead", {}, h("tr", {}, head.map((x, j) => h("th", attrs(j), x)))),
     h("tbody", {}, rows.map((r, i) => h("tr", { class: r.slice(1).every((v) => !isNum(v) || v === 0) ? "empty" : "", style: { animationDelay: `${i * 25}ms` } },
       r.map((v, j) => cell("td", v, j))))),
     h("tfoot", {}, h("tr", {}, foot.map((v, j) => cell("td", v, j))))));

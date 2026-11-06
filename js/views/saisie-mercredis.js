@@ -28,12 +28,12 @@ export function render(page, { year, data, store, setSubtitle }) {
     const kGout = kpi({ label: "Goûters du mois", value: 0, ico: "gouter", color: "--c-gouters" });
 
     grid = createGrid({
-      groups: { Enfants: "var(--c-mercredis)", Encadrement: "var(--faint)", "": "var(--border)" },
+      groups: { Enfants: "var(--c-mercredis)", Encadrement: "var(--c-encadrement)", "Goûters": "var(--c-gouters)" },
       cols: [
         ...MERCREDI.slice(0, 3).map((c) => ({ ...c, group: "Enfants" })),
         ...MERCREDI.slice(3).map((c) => ({ ...c, group: "Encadrement" })),
         { l: "Total repas", group: "", total: repasMercredi },
-        { l: "Goûters", group: "", total: goutersMercredi },
+        { l: "Calculés", group: "Goûters", total: goutersMercredi, soft: true },
       ],
       rows,
       onSave: (date, values) => store.saveDay("mercredis", date, values),

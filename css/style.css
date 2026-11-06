@@ -26,6 +26,9 @@
   --c-mercredis: #0ea5e9;
   --c-vacances: #f59e0b;
   --c-gouters: #10b981;
+  --c-piquenique: #ec4899;
+  --c-encadrement: #8b5cf6;
+  --c-total: #dc2626;
 
   --radius: 14px;
   --radius-sm: 10px;
@@ -58,6 +61,9 @@
     --c-mercredis: #38bdf8;
     --c-vacances: #fbbf24;
     --c-gouters: #34d399;
+    --c-piquenique: #f472b6;
+    --c-encadrement: #a78bfa;
+    --c-total: #f87171;
     --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
     --shadow-lg: 0 10px 40px rgba(0, 0, 0, .45);
     color-scheme: dark;
@@ -295,10 +301,26 @@ table.grid-table { width: 100%; border-collapse: separate; border-spacing: 0; fo
 .grid-table td.date { font-weight: 500; min-width: 170px; }
 .grid-table td.date .wd { display: inline-block; width: 34px; color: var(--muted); text-transform: capitalize; }
 .grid-table td.date .tag { margin-left: 8px; font-size: 11px; padding: 0 7px; }
-.grid-table td.total, .grid-table th.total { font-weight: 700; background: color-mix(in srgb, var(--surface-2) 70%, transparent); }
-.grid-table td.total.flash { animation: flash .6s; }
-@keyframes flash { 30% { color: var(--primary); } }
-.grid-table tfoot td { font-weight: 700; background: var(--surface-2); border-bottom: 0; height: 44px; }
+/* Colonnes teintées en pastel par groupe (--tint = couleur du groupe) */
+.grid-table td.tinted { background-color: color-mix(in srgb, var(--tint) 7%, var(--surface)); }
+.grid-table thead th.tinted { background-color: color-mix(in srgb, var(--tint) 13%, var(--surface)); color: color-mix(in srgb, var(--tint) 45%, var(--text)); }
+.grid-table tbody tr:hover td.tinted { background-color: color-mix(in srgb, var(--tint) 12%, var(--surface)); }
+.grid-table tbody tr.focus td.tinted { background-color: color-mix(in srgb, var(--tint) 17%, var(--surface)); }
+.grid-table tfoot td.tinted { background-color: color-mix(in srgb, var(--tint) 14%, var(--surface)); }
+.grid-table .tinted .cell { background: var(--surface); border-color: color-mix(in srgb, var(--tint) 20%, transparent); }
+.grid-table .tinted .cell:focus { border-color: var(--primary); }
+.grid-table tbody tr.muted td.tinted { background-color: color-mix(in srgb, var(--tint) 3%, var(--surface)); }
+.grid-table tbody tr.muted .tinted .cell { background: transparent; border-color: transparent; }
+.grid-table td.calc { font-weight: 600; color: color-mix(in srgb, var(--tint, var(--text)) 60%, var(--text)); }
+/* Totaux en rouge, sur un fond rosé très léger */
+.grid-table td.total, .grid-table th.total { font-weight: 700; color: var(--c-total); background-color: color-mix(in srgb, var(--c-total) 5%, var(--surface)); }
+.grid-table tbody tr:hover td.total { background-color: color-mix(in srgb, var(--c-total) 9%, var(--surface)); }
+.grid-table tbody tr.muted td.total { color: color-mix(in srgb, var(--c-total) 40%, var(--surface)); }
+.grid-table tfoot td:not(:first-child) { color: var(--c-total); }
+.grid-table tfoot td.total { background-color: color-mix(in srgb, var(--c-total) 11%, var(--surface)); }
+.grid-table td.total.flash, .grid-table td.calc.flash { animation: flash .7s ease; }
+@keyframes flash { 25% { background-color: color-mix(in srgb, var(--c-total) 22%, var(--surface)); } }
+.grid-table tfoot td { font-weight: 700; background: var(--surface-2); border-bottom: 0; border-top: 2px solid var(--border); height: 44px; }
 .grid-table td.status { width: 34px; text-align: center; padding: 0 10px 0 0; }
 .grid-table .sep { border-left: 1px solid var(--border); }
 .cell {
@@ -401,6 +423,7 @@ table.grid-table { width: 100%; border-collapse: separate; border-spacing: 0; fo
 
 /* ---------- Impression (PDF du bilan) ---------- */
 @media print {
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   :root { --bg: #fff; --surface: #fff; --surface-2: #f5f5f5; --text: #000; --muted: #444; --border: #ccc; }
   .sidebar, .no-print, .toasts, .year-picker { display: none !important; }
   .shell { display: block; }
