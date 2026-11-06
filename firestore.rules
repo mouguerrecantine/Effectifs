@@ -1,13 +1,13 @@
 rules_version = '2';
 
 // Règles de sécurité Firestore — à copier dans la console Firebase (Firestore > Règles).
-// ⚠️ Remplacer VOTRE_UID par l'UID du compte (Authentication > Users > colonne "User UID").
+// UID du compte unique autorisé (Authentication > Users).
 // Seul ce compte peut lire/écrire ; tout le reste est refusé. Chaque écriture est vérifiée.
 service cloud.firestore {
   match /databases/{database}/documents {
 
     function isOwner() {
-      return request.auth != null && request.auth.uid == 'VOTRE_UID';
+      return request.auth != null && request.auth.uid == 'U6kvmRU7vlNwCJV3xCN8eq5rRDu2';
     }
     function n(v) {               // nombre entier positif raisonnable
       return v is int && v >= 0 && v <= 5000;
