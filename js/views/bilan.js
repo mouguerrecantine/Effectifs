@@ -58,8 +58,10 @@ function tableaux(b, data) {
 
 function table({ head, rows, foot, totalCols, tints = [] }) {
   const isNum = (v) => typeof v === "number";
+  const rang = head.map((_, j) => { let n = 0; while (j - n - 1 >= 0 && tints[j - n - 1] && tints[j - n - 1] === tints[j]) n++; return n; });
   const attrs = (j) => ({
-    class: [totalCols.includes(j) ? "total" : "", tints[j] ? "tinted" : "", j && tints[j] !== tints[j - 1] ? "sep" : ""].join(" "),
+    class: [totalCols.includes(j) ? "total" : "", tints[j] ? "tinted" : "", tints[j] && rang[j] % 2 ? "alt" : "",
+      j && tints[j] !== tints[j - 1] ? "sep" : ""].join(" "),
     style: tints[j] ? { "--tint": tints[j] } : {},
   });
   const cell = (tag, v, j) => h(tag, attrs(j), isNum(v) ? fmt(v) : v);

@@ -302,14 +302,17 @@ table.grid-table { width: 100%; border-collapse: separate; border-spacing: 0; fo
 .grid-table td.date .wd { display: inline-block; width: 34px; color: var(--muted); text-transform: capitalize; }
 .grid-table td.date .tag { margin-left: 8px; font-size: 11px; padding: 0 7px; }
 /* Colonnes teintées en pastel par groupe (--tint = couleur du groupe) */
-.grid-table td.tinted { background-color: color-mix(in srgb, var(--tint) 7%, var(--surface)); }
-.grid-table thead th.tinted { background-color: color-mix(in srgb, var(--tint) 13%, var(--surface)); color: color-mix(in srgb, var(--tint) 45%, var(--text)); }
-.grid-table tbody tr:hover td.tinted { background-color: color-mix(in srgb, var(--tint) 12%, var(--surface)); }
-.grid-table tbody tr.focus td.tinted { background-color: color-mix(in srgb, var(--tint) 17%, var(--surface)); }
-.grid-table tfoot td.tinted { background-color: color-mix(in srgb, var(--tint) 14%, var(--surface)); }
+/* Nuances : une colonne sur deux un peu plus soutenue dans chaque groupe (classe .alt) */
+.grid-table .tinted { --p: 5%; --ph: 10%; --pf: 15%; --pt: 11%; --pm: 2%; --phd: 11%; }
+.grid-table .tinted.alt { --p: 11%; --ph: 16%; --pf: 21%; --pt: 17%; --pm: 5%; --phd: 18%; }
+.grid-table td.tinted { background-color: color-mix(in srgb, var(--tint) var(--p), var(--surface)); }
+.grid-table thead th.tinted { background-color: color-mix(in srgb, var(--tint) var(--phd), var(--surface)); color: color-mix(in srgb, var(--tint) 45%, var(--text)); }
+.grid-table tbody tr:hover td.tinted { background-color: color-mix(in srgb, var(--tint) var(--ph), var(--surface)); }
+.grid-table tbody tr.focus td.tinted { background-color: color-mix(in srgb, var(--tint) var(--pf), var(--surface)); }
+.grid-table tfoot td.tinted { background-color: color-mix(in srgb, var(--tint) var(--pt), var(--surface)); }
 .grid-table .tinted .cell { background: var(--surface); border-color: color-mix(in srgb, var(--tint) 20%, transparent); }
 .grid-table .tinted .cell:focus { border-color: var(--primary); }
-.grid-table tbody tr.muted td.tinted { background-color: color-mix(in srgb, var(--tint) 3%, var(--surface)); }
+.grid-table tbody tr.muted td.tinted { background-color: color-mix(in srgb, var(--tint) var(--pm), var(--surface)); }
 .grid-table tbody tr.muted .tinted .cell { background: transparent; border-color: transparent; }
 .grid-table td.calc { font-weight: 600; color: color-mix(in srgb, var(--tint, var(--text)) 60%, var(--text)); }
 /* Totaux en rouge, sur un fond rosé très léger */

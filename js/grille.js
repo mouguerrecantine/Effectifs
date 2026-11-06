@@ -20,8 +20,10 @@ export function createGrid({ cols, rows, groups = {}, onSave, onChange = () => {
 
   // Teinte pastel du groupe (colonnes saisies et colonnes calculées "douces") ; totaux = rouge.
   const tint = (c) => (c.total && !c.soft ? null : groups[c.group] || null);
+  // Rang de la colonne dans son groupe (pour alterner deux nuances : une école sur deux plus soutenue)
+  const rang = cols.map((c, j) => { let n = 0; while (j - n - 1 >= 0 && cols[j - n - 1].group === c.group && tint(cols[j - n - 1])) n++; return n; });
   const cls = (c, j) => [c.total && !c.soft ? "total" : "", c.soft ? "calc" : "",
-    j && cols[j - 1].group !== c.group ? "sep" : "", tint(c) ? "tinted" : ""].join(" ");
+    j && cols[j - 1].group !== c.group ? "sep" : "", tint(c) ? "tinted" : "", tint(c) && rang[j] % 2 ? "alt" : ""].join(" ");
   const sty = (c) => (tint(c) ? { "--tint": tint(c) } : {});
 
   // En-têtes (groupes + libellés)
